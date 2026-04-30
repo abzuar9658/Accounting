@@ -63,3 +63,20 @@ class EarningForm(forms.ModelForm):
             self.instance.receiver_person = earner
         return cleaned
 
+
+class EarningCellForm(EarningForm):
+    """Slim form for in-cell editing in the pivot view: only ``amount`` is
+    visible; project, earner, month and received_on ride along as hidden
+    inputs determined by which cell of the pivot the user clicked."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        attrs = {"form": self._form_id} if self._form_id else {}
+        for name in ("project", "earner", "month", "received_on"):
+            self.fields[name].widget = forms.HiddenInput(attrs=dict(attrs))
+        # Tighter amount input for cells.
+        self.fields["amount"].widget.attrs["class"] = (
+            "block w-28 rounded-md border-slate-300 text-sm shadow-sm "
+            "focus:border-brand-500 focus:ring-brand-500 text-right"
+        )
+

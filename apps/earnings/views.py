@@ -1,11 +1,15 @@
-from itertools import groupby
+from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from .forms import EarningForm
+from apps.accounts.models import Person
+from apps.periods.models import Month
+
+from .forms import EarningCellForm, EarningForm
 from .models import Earning
 from .services import generate_allocations
 
@@ -22,45 +26,116 @@ def _save_form(form: EarningForm, *, user) -> Earning:
     return earning
 
 
-@login_required
-def earning_list(request):
-    add_form = EarningForm(form_id="form-add")
-    if request.method == "POST":
-        add_form = EarningForm(request.POST, form_id="form-add")
-        if add_form.is_valid():
-            _save_form(add_form, user=request.user)
-            messages.success(request, "Earning recorded.")
-            return redirect("earnings:list")
+def _build_pivot():
+    """Group earnings by (project, earner) → row, with one cell per month.
 
-    edit_pk = request.GET.get("edit")
-    edit_form = None
-    edit_obj = None
-    if edit_pk and edit_pk.isdigit():
-        edit_obj = Earning.objects.filter(pk=int(edit_pk)).select_related("month").first()
-        if edit_obj and edit_obj.month.is_editable:
-            edit_form = EarningForm(instance=edit_obj, form_id="form-edit")
-        else:
-            edit_obj = None
-
+    Months are returned in ascending chronological order so the column
+    headers read naturally left-to-right (oldest first).
+    """
     earnings = list(
         Earning.objects
-        .select_related("month", "earner", "receiver_person", "created_by")
-        .order_by("-month__year", "-month__month", "-received_on", "-id")
+        .select_related("month", "earner")
+        .order_by("month__year", "month__month", "project", "earner__name", "id")
     )
-    grouped = [
-        (month, list(rows))
-        for month, rows in groupby(earnings, key=lambda e: e.month)
-    ]
+    months_by_id = {e.month_id: e.month for e in earnings}
+    months = sorted(months_by_id.values(), key=lambda m: (m.year, m.month))
+
+    row_map: dict[tuple[str, int], dict] = {}
+    for e in earnings:
+        norm = (e.project or "").strip().lower()
+        key = (norm, e.earner_id)
+        row = row_map.get(key)
+        if row is None:
+            row = row_map[key] = {
+                "project": e.project or "",
+                "earner": e.earner,
+                "by_month": {},
+            }
+        row["by_month"].setdefault(e.month_id, []).append(e)
+
+    rows = []
+    for r in sorted(row_map.values(), key=lambda r: (r["project"].lower(), r["earner"].name.lower())):
+        cells = []
+        for m in months:
+            es = r["by_month"].get(m.id, [])
+            cells.append({
+                "month": m,
+                "earnings": es,
+                "first": es[0] if es else None,
+                "count": len(es),
+                "total": sum((x.amount for x in es), Decimal("0")),
+            })
+        r["cells"] = cells
+        rows.append(r)
+    return rows, months
+
+
+@login_required
+def earning_list(request):
+    cell_param = request.GET.get("cell", "")
+    edit_pk = None
+    edit_form = None
+    new_cell = None
+    new_form = None
+
+    if cell_param.isdigit():
+        e = Earning.objects.filter(pk=int(cell_param)).select_related("month").first()
+        if e and e.month.is_editable:
+            edit_pk = e.pk
+            edit_form = EarningCellForm(instance=e, form_id="form-cell-edit")
+    elif cell_param == "new":
+        earner_id = request.GET.get("earner", "")
+        month_id = request.GET.get("month", "")
+        project = request.GET.get("project", "")
+        if earner_id.isdigit() and month_id.isdigit():
+            month = Month.objects.filter(pk=int(month_id)).first()
+            if month and month.is_editable and Person.objects.filter(pk=int(earner_id)).exists():
+                new_cell = {
+                    "project": project,
+                    "earner_id": int(earner_id),
+                    "month_id": int(month_id),
+                }
+                new_form = EarningCellForm(
+                    initial={
+                        "project": project,
+                        "earner": int(earner_id),
+                        "month": int(month_id),
+                        "received_on": timezone.localdate(),
+                    },
+                    form_id="form-cell-new",
+                )
+
+    add_form = EarningForm(form_id="form-add-row")
+    rows, months = _build_pivot()
     return render(
         request,
         "earnings/list.html",
         {
-            "grouped": grouped,
-            "add_form": add_form,
+            "rows": rows,
+            "months": months,
+            "edit_pk": edit_pk,
             "edit_form": edit_form,
-            "edit_pk": edit_obj.pk if edit_obj else None,
+            "new_cell": new_cell,
+            "new_form": new_form,
+            "add_form": add_form,
         },
     )
+
+
+@require_POST
+@login_required
+def earning_create(request):
+    """Shared endpoint for both the bottom add-row form and the in-cell
+    new-earning form. On error we show a flash message and redirect back to
+    the pivot — the form data is short enough that re-typing isn't painful."""
+    form = EarningForm(request.POST)
+    if form.is_valid():
+        _save_form(form, user=request.user)
+        messages.success(request, "Earning added.")
+    else:
+        details = "; ".join(f"{k}: {', '.join(v)}" for k, v in form.errors.items())
+        messages.error(request, f"Could not add earning ({details}).")
+    return redirect("earnings:list")
 
 
 @require_POST
@@ -70,31 +145,14 @@ def earning_update(request, pk: int):
     if not earning.month.is_editable:
         messages.error(request, "That month is closed; reopen it to edit earnings.")
         return redirect("earnings:list")
-    form = EarningForm(request.POST, instance=earning, form_id="form-edit")
+    form = EarningForm(request.POST, instance=earning)
     if form.is_valid():
         _save_form(form, user=request.user)
         messages.success(request, "Earning updated.")
-        return redirect("earnings:list")
-    # Re-render the list with this row in edit mode and the errors visible.
-    earnings = list(
-        Earning.objects
-        .select_related("month", "earner", "receiver_person", "created_by")
-        .order_by("-month__year", "-month__month", "-received_on", "-id")
-    )
-    grouped = [
-        (month, list(rows))
-        for month, rows in groupby(earnings, key=lambda e: e.month)
-    ]
-    return render(
-        request,
-        "earnings/list.html",
-        {
-            "grouped": grouped,
-            "add_form": EarningForm(form_id="form-add"),
-            "edit_form": form,
-            "edit_pk": earning.pk,
-        },
-    )
+    else:
+        details = "; ".join(f"{k}: {', '.join(v)}" for k, v in form.errors.items())
+        messages.error(request, f"Could not update earning ({details}).")
+    return redirect("earnings:list")
 
 
 @require_POST
