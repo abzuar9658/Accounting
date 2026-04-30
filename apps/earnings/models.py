@@ -34,6 +34,7 @@ class Earning(models.Model):
     )
 
     amount = models.DecimalField(max_digits=14, decimal_places=3)
+    project = models.CharField(max_length=120, blank=True)
     received_on = models.DateField()
     reference = models.CharField(max_length=120, blank=True)
     notes = models.TextField(blank=True)
