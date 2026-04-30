@@ -1,4 +1,5 @@
 from django import forms
+from django.utils import timezone
 
 from apps.accounts.models import Person
 from apps.periods.models import Month, MonthStatus
@@ -24,11 +25,15 @@ class EarningForm(forms.ModelForm):
         self.fields["earner"].queryset = Person.objects.filter(is_active=True)
         self.fields["month"].queryset = Month.objects.exclude(status=MonthStatus.CLOSED)
         self.fields["month"].empty_label = "Pick month"
-        # Default the month to the latest editable one for convenience.
-        if not self.is_bound and not self.initial.get("month") and self.instance.pk is None:
-            latest = self.fields["month"].queryset.first()
-            if latest:
-                self.initial["month"] = latest.pk
+        # Default the month to the latest editable one and the date to today
+        # so the inline-add row is one click away from being submittable.
+        if not self.is_bound and self.instance.pk is None:
+            if not self.initial.get("month"):
+                latest = self.fields["month"].queryset.first()
+                if latest:
+                    self.initial["month"] = latest.pk
+            if not self.initial.get("received_on"):
+                self.initial["received_on"] = timezone.localdate()
         # Compact widgets for the inline table-row form.
         cls = "block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500"
         for name, field in self.fields.items():
