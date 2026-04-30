@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load money %}
+{% block title %}Transfers · Accounting{% endblock %}
+{% block content %}
+  <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">Transfers</h1>
+      <p class="mt-1 text-sm text-slate-500">Aggregated obligations between people and the company.</p>
+    </div>
+    <div class="inline-flex rounded-md shadow-sm ring-1 ring-slate-200" role="group">
+      {% for key, label in tabs %}
+        <a href="?status={{ key }}"
+           class="px-3 py-1.5 text-sm font-medium {% if status == key %}bg-brand-600 text-white{% else %}bg-white text-slate-600 hover:bg-slate-50{% endif %} {% if forloop.first %}rounded-l-md{% endif %} {% if forloop.last %}rounded-r-md{% endif %}">
+          {{ label }}
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200 text-sm">
+        <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <tr>
+            <th class="px-6 py-3">Month</th>
+            <th class="px-6 py-3">From</th>
+            <th class="px-6 py-3">To</th>
+            <th class="px-6 py-3 text-right">Amount</th>
+            <th class="px-6 py-3 text-right">Paid</th>
+            <th class="px-6 py-3 text-right">Remaining</th>
+            <th class="px-6 py-3">Status</th>
+            <th class="px-6 py-3"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for t in transfers %}
+            <tr>
+              <td class="whitespace-nowrap px-6 py-3"><a href="{% url 'periods:month_detail' code=t.month.code %}" class="text-brand-600 hover:text-brand-700">{{ t.month.code }}</a></td>
+              <td class="whitespace-nowrap px-6 py-3 text-slate-700">{{ t.from_label }}</td>
+              <td class="whitespace-nowrap px-6 py-3 text-slate-700">{{ t.to_label }}</td>
+              <td class="whitespace-nowrap px-6 py-3 text-right font-medium text-slate-900">{{ t.amount|pkr }}</td>
+              <td class="whitespace-nowrap px-6 py-3 text-right text-emerald-600">{{ t.amount_paid|pkr }}</td>
+              <td class="whitespace-nowrap px-6 py-3 text-right text-rose-600">{{ t.amount_remaining|pkr }}</td>
+              <td class="whitespace-nowrap px-6 py-3">
+                {% if t.status == 'paid' %}<span class="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">Paid</span>
+                {% elif t.status == 'partial' %}<span class="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">Partial</span>
+                {% elif t.status == 'cancelled' %}<span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">Cancelled</span>
+                {% else %}<span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">Pending</span>{% endif %}
+              </td>
+              <td class="whitespace-nowrap px-6 py-3 text-right"><a href="{% url 'transfers:detail' pk=t.pk %}" class="text-sm font-medium text-brand-600 hover:text-brand-700">Open</a></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="8" class="px-6 py-10 text-center text-slate-500">No transfers in this view.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% load money %}
+{% block title %}Transfer #{{ transfer.pk }} · Accounting{% endblock %}
+{% block content %}
+  <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <p class="text-sm text-slate-500"><a href="{% url 'transfers:list' %}" class="hover:text-slate-700">← All transfers</a></p>
+      <h1 class="mt-1 text-2xl font-semibold text-slate-900">{{ transfer.from_label }} → {{ transfer.to_label }}</h1>
+      <p class="mt-1 text-sm text-slate-500">Month {{ transfer.month.code }} · created {{ transfer.created_at|date:"d M Y" }}</p>
+    </div>
+    {% if transfer.status != 'paid' and transfer.status != 'cancelled' %}
+      <a href="{% url 'transfers:payment_create' pk=transfer.pk %}" class="inline-flex items-center rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700">Record payment</a>
+    {% endif %}
+  </div>
+
+  <div class="grid gap-4 sm:grid-cols-3">
+    <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Total</p>
+      <p class="mt-1 text-xl font-semibold text-slate-900">{{ transfer.amount|pkr }}</p>
+    </div>
+    <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Paid</p>
+      <p class="mt-1 text-xl font-semibold text-emerald-600">{{ transfer.amount_paid|pkr }}</p>
+    </div>
+    <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Remaining</p>
+      <p class="mt-1 text-xl font-semibold text-rose-600">{{ transfer.amount_remaining|pkr }}</p>
+    </div>
+  </div>
+
+  <h2 class="mt-8 text-lg font-semibold text-slate-900">Payments</h2>
+  <div class="mt-3 rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200 text-sm">
+        <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <tr>
+            <th class="px-6 py-3">Date</th>
+            <th class="px-6 py-3 text-right">Amount</th>
+            <th class="px-6 py-3">Reference</th>
+            <th class="px-6 py-3">Proof</th>
+            <th class="px-6 py-3">Notes</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for p in transfer.payments.all %}
+            <tr>
+              <td class="whitespace-nowrap px-6 py-3 text-slate-700">{{ p.happened_on }}</td>
+              <td class="whitespace-nowrap px-6 py-3 text-right font-medium text-emerald-600">{{ p.amount|pkr }}</td>
+              <td class="px-6 py-3 text-slate-700">{{ p.reference|default:"—" }}</td>
+              <td class="px-6 py-3">{% if p.proof %}<a class="text-sm text-brand-600 hover:text-brand-700" href="{{ p.proof.url }}">view</a>{% else %}<span class="text-slate-400">—</span>{% endif %}</td>
+              <td class="px-6 py-3 text-slate-600">{{ p.notes|default:"—" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="px-6 py-10 text-center text-slate-500">No payments yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

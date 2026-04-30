@@ -32,7 +32,12 @@ def month_list(request):
 def month_detail(request, code: str):
     month = get_object_or_404(Month, year=int(code[:4]), month=int(code[5:7]))
     rule = getattr(month, "split_rule", None)
-    return render(request, "periods/month_detail.html", {"month": month, "rule": rule})
+    transfers = month.transfers.select_related("from_person", "to_person")
+    return render(
+        request,
+        "periods/month_detail.html",
+        {"month": month, "rule": rule, "transfers": transfers},
+    )
 
 
 @login_required

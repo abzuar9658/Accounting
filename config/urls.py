@@ -13,6 +13,7 @@ urlpatterns = [
     path("months/", include("apps.periods.urls")),
     path("earnings/", include("apps.earnings.urls")),
     path("expenses/", include("apps.expenses.urls")),
+    path("transfers/", include("apps.transfers.urls")),
     path(
         "",
         login_required(TemplateView.as_view(template_name="home.html")),
