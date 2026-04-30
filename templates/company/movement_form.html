@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}New movement · Accounting{% endblock %}
+{% block content %}
+  <div class="mx-auto max-w-xl">
+    <h1 class="text-2xl font-semibold text-slate-900">Record cash movement</h1>
+    <p class="mt-1 text-sm text-slate-500">Withdrawals are stored as a negative amount automatically.</p>
+
+    <form method="post" class="mt-6 space-y-5 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+      {% csrf_token %}
+      {% for field in form %}{% include "_partials/form_field.html" %}{% endfor %}
+      <div class="flex justify-end gap-2">
+        <a href="{% url 'company:detail' %}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</a>
+        <button type="submit" class="inline-flex items-center rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700">Save movement</button>
+      </div>
+    </form>
+  </div>
+{% endblock %}

@@ -1,0 +1,13 @@
+{# Renders a single form field with label, widget and errors using Tailwind forms plugin classes. #}
+<div>
+  {% if field.label %}
+    <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-slate-700">{{ field.label }}</label>
+  {% endif %}
+  <div class="mt-1">
+    {{ field }}
+  </div>
+  {% if field.help_text %}<p class="mt-1 text-xs text-slate-500">{{ field.help_text }}</p>{% endif %}
+  {% if field.errors %}
+    <p class="mt-1 text-xs text-rose-600">{{ field.errors|join:" " }}</p>
+  {% endif %}
+</div>

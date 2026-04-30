@@ -20,7 +20,9 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     # Local apps
+    "apps.common",
     "apps.accounts",
+    "apps.company",
 ]
 
 AUTH_USER_MODEL = "accounts.User"

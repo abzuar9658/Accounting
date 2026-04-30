@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% load money %}
+{% block title %}Company · Accounting{% endblock %}
+{% block content %}
+  <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">{{ company.name }}</h1>
+      <p class="mt-1 text-sm text-slate-500">Cash position and recent movements.</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="{% url 'company:edit' %}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Edit details</a>
+      <a href="{% url 'company:movement_create' %}" class="inline-flex items-center rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700">Add movement</a>
+    </div>
+  </div>
+
+  <div class="grid gap-4 sm:grid-cols-3">
+    <div class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+      <p class="text-sm font-medium text-slate-500">Current balance</p>
+      <p class="mt-2 text-3xl font-semibold text-slate-900">{{ company.current_balance|pkr }}</p>
+    </div>
+    <div class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+      <p class="text-sm font-medium text-slate-500">Opening balance</p>
+      <p class="mt-2 text-2xl font-semibold text-slate-800">{{ company.opening_balance|pkr }}</p>
+      {% if company.opening_balance_date %}<p class="mt-1 text-xs text-slate-500">As of {{ company.opening_balance_date }}</p>{% endif %}
+    </div>
+    <div class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+      <p class="text-sm font-medium text-slate-500">Bank</p>
+      <p class="mt-2 text-base font-medium text-slate-800">{{ company.bank_name|default:"—" }}</p>
+      <p class="text-sm text-slate-500">{{ company.bank_account_title }}{% if company.bank_account_number %} · {{ company.bank_account_number }}{% endif %}</p>
+    </div>
+  </div>
+
+  <section class="mt-8 rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+    <div class="border-b border-slate-200 px-6 py-4">
+      <h2 class="text-base font-semibold text-slate-900">Recent movements</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200 text-sm">
+        <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <tr>
+            <th class="px-6 py-3">Date</th>
+            <th class="px-6 py-3">Kind</th>
+            <th class="px-6 py-3">Description</th>
+            <th class="px-6 py-3 text-right">Amount</th>
+            <th class="px-6 py-3">By</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for m in movements %}
+            <tr>
+              <td class="whitespace-nowrap px-6 py-3 text-slate-700">{{ m.happened_on }}</td>
+              <td class="whitespace-nowrap px-6 py-3"><span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">{{ m.get_kind_display }}</span></td>
+              <td class="px-6 py-3 text-slate-700">{{ m.description|default:"—" }}</td>
+              <td class="whitespace-nowrap px-6 py-3 text-right font-medium {% if m.amount < 0 %}text-rose-600{% else %}text-emerald-600{% endif %}">{{ m.amount|pkr }}</td>
+              <td class="whitespace-nowrap px-6 py-3 text-slate-500">{{ m.created_by|default:"—" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="px-6 py-10 text-center text-slate-500">No movements recorded yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}
