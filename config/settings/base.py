@@ -19,7 +19,15 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # Local apps
+    "apps.accounts",
 ]
+
+AUTH_USER_MODEL = "accounts.User"
+
+# Role group names. Created/updated by an accounts data migration.
+ROLE_ADMIN = "Admin"
+ROLE_MEMBER = "Member"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

@@ -1,0 +1,28 @@
+"""Seed the two role groups used throughout the app."""
+from django.conf import settings
+from django.db import migrations
+
+ROLE_GROUPS = (settings.ROLE_ADMIN, settings.ROLE_MEMBER)
+
+
+def create_role_groups(apps, schema_editor):
+    Group = apps.get_model("auth", "Group")
+    for name in ROLE_GROUPS:
+        Group.objects.get_or_create(name=name)
+
+
+def delete_role_groups(apps, schema_editor):
+    Group = apps.get_model("auth", "Group")
+    Group.objects.filter(name__in=ROLE_GROUPS).delete()
+
+
+class Migration(migrations.Migration):
+
+    dependencies = [
+        ("accounts", "0001_initial"),
+        ("auth", "0012_alter_user_first_name_max_length"),
+    ]
+
+    operations = [
+        migrations.RunPython(create_role_groups, delete_role_groups),
+    ]
