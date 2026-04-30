@@ -32,7 +32,10 @@ class Expense(models.Model):
         Month, on_delete=models.SET_NULL, null=True, blank=True,
         related_name="expenses",
     )
-    category = models.ForeignKey(ExpenseCategory, on_delete=models.PROTECT, related_name="expenses")
+    category = models.ForeignKey(
+        ExpenseCategory, on_delete=models.PROTECT,
+        null=True, blank=True, related_name="expenses",
+    )
     happened_on = models.DateField()
     amount = models.DecimalField(max_digits=14, decimal_places=3)
     description = models.CharField(max_length=255)
@@ -50,7 +53,8 @@ class Expense(models.Model):
         indexes = [models.Index(fields=("month", "category"))]
 
     def __str__(self) -> str:
-        return f"{self.category} · {self.amount} on {self.happened_on}"
+        label = self.category or "Uncategorized"
+        return f"{label} · {self.amount} on {self.happened_on}"
 
     def clean(self):
         if self.amount is not None and self.amount <= 0:

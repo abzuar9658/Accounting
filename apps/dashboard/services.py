@@ -161,7 +161,8 @@ def monthly_report(month: Month) -> dict:
 
     expenses_by_category: dict[str, Decimal] = {}
     for x in expenses:
-        expenses_by_category[x.category.name] = expenses_by_category.get(x.category.name, ZERO) + x.amount
+        name = x.category.name if x.category_id else "Uncategorized"
+        expenses_by_category[name] = expenses_by_category.get(name, ZERO) + x.amount
 
     earnings_total = sum(earnings_by_earner.values(), ZERO)
     expenses_total = sum(expenses_by_category.values(), ZERO)

@@ -144,8 +144,8 @@
             {% for x in recent_expenses %}
               <li class="flex items-center justify-between py-2">
                 <div>
-                  <p class="font-medium text-slate-800">{{ x.category.name }}</p>
-                  <p class="text-xs text-slate-500">{{ x.happened_on }}{% if x.description %} · {{ x.description|truncatechars:60 }}{% endif %}</p>
+                  <p class="font-medium text-slate-800">{{ x.description|default:"Expense" }}</p>
+                  <p class="text-xs text-slate-500">{{ x.happened_on }}{% if x.category %} · {{ x.category.name }}{% endif %}</p>
                 </div>
                 <span class="text-sm font-semibold text-rose-600">−{{ x.amount|pkr }}</span>
               </li>

@@ -2,44 +2,111 @@
 {% load money %}
 {% block title %}Expenses · Accounting{% endblock %}
 {% block content %}
-  <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
-    <div>
-      <h1 class="text-2xl font-semibold text-slate-900">Expenses</h1>
-      <p class="mt-1 text-sm text-slate-500">All expenses are paid from the company's account.</p>
-    </div>
-    <a href="{% url 'expenses:create' %}" class="inline-flex items-center rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700">New expense</a>
+  <div class="mb-6">
+    <h1 class="text-2xl font-semibold text-slate-900">Expenses</h1>
+    <p class="mt-1 text-sm text-slate-500">All expenses are paid from the company's account. Use the row at the bottom to add an entry; click <em>Edit</em> on any row to change it in place.</p>
   </div>
+
+  {# Out-of-band forms referenced by inputs/buttons via the form="..." attribute #}
+  <form method="post" id="form-expense-add" action="{% url 'expenses:create' %}" enctype="multipart/form-data">{% csrf_token %}</form>
+  {% if edit_pk %}
+    <form method="post" id="form-expense-edit" action="{% url 'expenses:update' pk=edit_pk %}" enctype="multipart/form-data">{% csrf_token %}</form>
+  {% endif %}
+  {% for x in expenses %}
+    {% if not edit_pk or edit_pk != x.pk %}
+      {% if not x.month or x.month.is_editable %}
+        <form method="post" id="form-expense-delete-{{ x.pk }}" action="{% url 'expenses:delete' pk=x.pk %}" onsubmit="return confirm('Delete this expense?');">{% csrf_token %}</form>
+      {% endif %}
+    {% endif %}
+  {% endfor %}
 
   <div class="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
     <div class="overflow-x-auto">
       <table class="min-w-full divide-y divide-slate-200 text-sm">
         <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
           <tr>
-            <th class="px-6 py-3">Date</th>
-            <th class="px-6 py-3">Month</th>
-            <th class="px-6 py-3">Category</th>
-            <th class="px-6 py-3">Description</th>
-            <th class="px-6 py-3 text-right">Amount</th>
-            <th class="px-6 py-3">Receipt</th>
-            <th class="px-6 py-3"></th>
+            <th class="px-4 py-3">Date</th>
+            <th class="px-4 py-3">Month</th>
+            <th class="px-4 py-3">Description</th>
+            <th class="px-4 py-3 text-right">Amount</th>
+            <th class="px-4 py-3">Receipt</th>
+            <th class="px-4 py-3 text-right">Actions</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
           {% for x in expenses %}
-            <tr>
-              <td class="whitespace-nowrap px-6 py-3 text-slate-700">{{ x.happened_on }}</td>
-              <td class="whitespace-nowrap px-6 py-3">{% if x.month %}<a href="{% url 'periods:month_detail' code=x.month.code %}" class="text-brand-600 hover:text-brand-700">{{ x.month.code }}</a>{% else %}<span class="text-amber-600">orphaned</span>{% endif %}</td>
-              <td class="whitespace-nowrap px-6 py-3 text-slate-700">{{ x.category }}</td>
-              <td class="px-6 py-3 text-slate-600">{{ x.description }}</td>
-              <td class="whitespace-nowrap px-6 py-3 text-right font-medium text-rose-600">{{ x.amount|pkr }}</td>
-              <td class="whitespace-nowrap px-6 py-3">{% if x.receipt %}<a href="{{ x.receipt.url }}" class="text-sm text-brand-600 hover:text-brand-700">view</a>{% else %}<span class="text-slate-400 text-sm">—</span>{% endif %}</td>
-              <td class="whitespace-nowrap px-6 py-3 text-right">{% if not x.month or x.month.is_editable %}<a href="{% url 'expenses:edit' pk=x.pk %}" class="text-sm font-medium text-brand-600 hover:text-brand-700">Edit</a>{% endif %}</td>
-            </tr>
+            {% if edit_pk == x.pk %}
+              <tr class="bg-amber-50/40">
+                <td class="px-4 py-3">{{ edit_form.happened_on }}{% if edit_form.happened_on.errors %}<p class="mt-1 text-xs text-rose-600">{{ edit_form.happened_on.errors|join:" " }}</p>{% endif %}</td>
+                <td class="px-4 py-3">{{ edit_form.month }}{% if edit_form.month.errors %}<p class="mt-1 text-xs text-rose-600">{{ edit_form.month.errors|join:" " }}</p>{% endif %}</td>
+                <td class="px-4 py-3">{{ edit_form.description }}{% if edit_form.description.errors %}<p class="mt-1 text-xs text-rose-600">{{ edit_form.description.errors|join:" " }}</p>{% endif %}</td>
+                <td class="px-4 py-3 text-right">{{ edit_form.amount }}{% if edit_form.amount.errors %}<p class="mt-1 text-xs text-rose-600">{{ edit_form.amount.errors|join:" " }}</p>{% endif %}</td>
+                <td class="px-4 py-3">{{ edit_form.receipt }}{% if x.receipt %}<p class="mt-1 text-xs text-slate-500">current: <a href="{{ x.receipt.url }}" class="text-brand-600 hover:text-brand-700">view</a></p>{% endif %}</td>
+                <td class="whitespace-nowrap px-4 py-3 text-right text-xs">
+                  <button type="submit" form="form-expense-edit" class="font-semibold text-emerald-600 hover:text-emerald-700">Save</button>
+                  <a href="{% url 'expenses:list' %}" class="ml-2 font-medium text-slate-500 hover:text-slate-700">Cancel</a>
+                </td>
+              </tr>
+            {% else %}
+              <tr class="hover:bg-slate-50/40">
+                <td class="whitespace-nowrap px-4 py-3 text-slate-700">{{ x.happened_on }}</td>
+                <td class="whitespace-nowrap px-4 py-3">{% if x.month %}<a href="{% url 'periods:month_detail' code=x.month.code %}" class="text-brand-600 hover:text-brand-700">{{ x.month.code }}</a>{% else %}<span class="text-amber-600">orphaned</span>{% endif %}</td>
+                <td class="px-4 py-3 text-slate-600">{{ x.description|default:"—" }}</td>
+                <td class="whitespace-nowrap px-4 py-3 text-right font-medium text-rose-600">{{ x.amount|pkr }}</td>
+                <td class="whitespace-nowrap px-4 py-3">{% if x.receipt %}<a href="{{ x.receipt.url }}" class="text-sm text-brand-600 hover:text-brand-700">view</a>{% else %}<span class="text-slate-400 text-sm">—</span>{% endif %}</td>
+                <td class="whitespace-nowrap px-4 py-3 text-right text-xs">
+                  {% if not x.month or x.month.is_editable %}
+                    <a href="?edit={{ x.pk }}" class="font-medium text-brand-600 hover:text-brand-700">Edit</a>
+                    <button type="submit" form="form-expense-delete-{{ x.pk }}" class="ml-2 font-medium text-rose-600 hover:text-rose-700">Delete</button>
+                  {% else %}
+                    <span class="text-slate-400">Closed</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endif %}
           {% empty %}
-            <tr><td colspan="7" class="px-6 py-10 text-center text-slate-500">No expenses yet.</td></tr>
+            <tr><td colspan="6" class="px-6 py-10 text-center text-slate-500">No expenses yet — use the row below to add the first one.</td></tr>
           {% endfor %}
         </tbody>
       </table>
+    </div>
+
+    {# Inline-add row #}
+    <div class="border-t border-slate-200 bg-brand-50/40 px-4 py-3">
+      <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Add a new expense</p>
+      {% if add_form.non_field_errors %}
+        <div class="mb-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{{ add_form.non_field_errors }}</div>
+      {% endif %}
+      <div class="grid grid-cols-1 gap-2 sm:grid-cols-12 sm:items-end">
+        <div class="sm:col-span-2">
+          <label class="block text-xs text-slate-600">Date</label>
+          {{ add_form.happened_on }}
+          {% if add_form.happened_on.errors %}<p class="mt-1 text-xs text-rose-600">{{ add_form.happened_on.errors|join:" " }}</p>{% endif %}
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-xs text-slate-600">Month</label>
+          {{ add_form.month }}
+          {% if add_form.month.errors %}<p class="mt-1 text-xs text-rose-600">{{ add_form.month.errors|join:" " }}</p>{% endif %}
+        </div>
+        <div class="sm:col-span-3">
+          <label class="block text-xs text-slate-600">Description</label>
+          {{ add_form.description }}
+          {% if add_form.description.errors %}<p class="mt-1 text-xs text-rose-600">{{ add_form.description.errors|join:" " }}</p>{% endif %}
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-xs text-slate-600">Amount</label>
+          {{ add_form.amount }}
+          {% if add_form.amount.errors %}<p class="mt-1 text-xs text-rose-600">{{ add_form.amount.errors|join:" " }}</p>{% endif %}
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-xs text-slate-600">Receipt</label>
+          {{ add_form.receipt }}
+          {% if add_form.receipt.errors %}<p class="mt-1 text-xs text-rose-600">{{ add_form.receipt.errors|join:" " }}</p>{% endif %}
+        </div>
+        <div class="sm:col-span-1">
+          <button type="submit" form="form-expense-add" class="w-full inline-flex justify-center items-center rounded-md bg-brand-600 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-brand-700">Add</button>
+        </div>
+      </div>
     </div>
   </div>
 {% endblock %}

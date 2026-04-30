@@ -26,7 +26,10 @@ def upsert_movement(sender, instance: Expense, created, **kwargs):
         kind=MovementKind.EXPENSE,
         amount=-instance.amount,
         happened_on=instance.happened_on,
-        description=f"{instance.category}: {instance.description}"[:255],
+        description=(
+            f"{instance.category}: {instance.description}"
+            if instance.category_id else instance.description
+        )[:255],
         source_app=SOURCE_APP,
         source_model=SOURCE_MODEL,
         source_id=instance.pk,
