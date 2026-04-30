@@ -27,7 +27,7 @@ def person_create(request):
         if form.is_valid():
             person = form.save()
             messages.success(request, f"Added {person.name}.")
-            return redirect("accounts:person_list")
+            return redirect("person_list")
     else:
         form = PersonForm()
     return render(request, "accounts/person_form.html", {"form": form})
@@ -42,7 +42,7 @@ def person_edit(request, pk: int):
         if form.is_valid():
             form.save()
             messages.success(request, f"Updated {person.name}.")
-            return redirect("accounts:person_list")
+            return redirect("person_list")
     else:
         form = PersonForm(instance=person)
     return render(request, "accounts/person_form.html", {"form": form, "person": person})
