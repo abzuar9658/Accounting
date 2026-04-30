@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Months · Accounting{% endblock %}
+{% block content %}
+  <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">Months</h1>
+      <p class="mt-1 text-sm text-slate-500">Each month owns its own split rule, earnings and expenses.</p>
+    </div>
+  </div>
+
+  <div class="grid gap-6 lg:grid-cols-3">
+    <div class="lg:col-span-2 rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200 text-sm">
+          <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <tr>
+              <th class="px-6 py-3">Month</th>
+              <th class="px-6 py-3">Status</th>
+              <th class="px-6 py-3">Split</th>
+              <th class="px-6 py-3"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            {% for m in months %}
+              <tr>
+                <td class="whitespace-nowrap px-6 py-3 font-medium text-slate-800"><a href="{% url 'periods:month_detail' code=m.code %}" class="hover:underline">{{ m.label }}</a></td>
+                <td class="whitespace-nowrap px-6 py-3">
+                  {% if m.status == 'open' %}<span class="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">Open</span>
+                  {% elif m.status == 'review' %}<span class="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">Under review</span>
+                  {% else %}<span class="inline-flex rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-700">Closed</span>{% endif %}
+                </td>
+                <td class="px-6 py-3 text-slate-600">{% if m.split_rule %}{{ m.split_rule.participants_label }}{% else %}<span class="text-slate-400">not configured</span>{% endif %}</td>
+                <td class="whitespace-nowrap px-6 py-3 text-right"><a class="text-sm font-medium text-brand-600 hover:text-brand-700" href="{% url 'periods:month_detail' code=m.code %}">Open →</a></td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="4" class="px-6 py-10 text-center text-slate-500">No months yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <aside class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+      <h2 class="text-base font-semibold text-slate-900">Add a month</h2>
+      <p class="mt-1 text-sm text-slate-500">Use the year and month numbers, e.g. 2026 and 4.</p>
+      <form method="post" class="mt-4 space-y-4">
+        {% csrf_token %}
+        {% for field in form %}{% include "_partials/form_field.html" %}{% endfor %}
+        <button type="submit" class="inline-flex items-center rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700">Create</button>
+      </form>
+    </aside>
+  </div>
+{% endblock %}

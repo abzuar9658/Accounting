@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ month.label }} · Accounting{% endblock %}
+{% block content %}
+  <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ month.code }}</p>
+      <h1 class="mt-1 text-2xl font-semibold text-slate-900">{{ month.label }}</h1>
+      <p class="mt-1 text-sm text-slate-500">
+        Status:
+        {% if month.status == 'open' %}<span class="font-medium text-emerald-700">Open</span>
+        {% elif month.status == 'review' %}<span class="font-medium text-amber-700">Under review</span>
+        {% else %}<span class="font-medium text-slate-700">Closed</span>{% endif %}
+      </p>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="{% url 'periods:month_list' %}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">All months</a>
+      {% if month.is_editable %}<a href="{% url 'periods:split_edit' code=month.code %}" class="inline-flex items-center rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700">Edit split</a>{% endif %}
+    </div>
+  </div>
+
+  <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+    <h2 class="text-base font-semibold text-slate-900">Split rule</h2>
+    {% if rule %}
+      <table class="mt-4 min-w-full divide-y divide-slate-200 text-sm">
+        <thead class="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <tr><th class="py-2">Participant</th><th class="py-2 text-right">Percent</th></tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for s in rule.shares.all %}
+            <tr><td class="py-2 text-slate-700">{{ s.label }}</td><td class="py-2 text-right font-medium text-slate-800">{{ s.percent }}%</td></tr>
+          {% endfor %}
+          <tr class="border-t border-slate-300"><td class="py-2 font-semibold text-slate-700">Total</td><td class="py-2 text-right font-semibold {% if rule.total_percent == 100 %}text-emerald-600{% else %}text-rose-600{% endif %}">{{ rule.total_percent }}%</td></tr>
+        </tbody>
+      </table>
+    {% else %}
+      <p class="mt-4 text-sm text-slate-500">No split rule configured for this month yet.</p>
+      {% if month.is_editable %}<a href="{% url 'periods:split_edit' code=month.code %}" class="mt-3 inline-flex items-center rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700">Configure split</a>{% endif %}
+    {% endif %}
+  </section>
+{% endblock %}

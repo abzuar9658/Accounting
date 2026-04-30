@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Edit split · {{ month.label }}{% endblock %}
+{% block content %}
+  <div class="mx-auto max-w-3xl">
+    <h1 class="text-2xl font-semibold text-slate-900">Split rule · {{ month.label }}</h1>
+    <p class="mt-1 text-sm text-slate-500">Percentages must sum to 100. The Company row is always present; set its percent to 0 if the company doesn't take a share this month.</p>
+
+    <form method="post" class="mt-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+      {% csrf_token %}
+      {{ formset.management_form }}
+
+      {% if formset.non_form_errors %}
+        <div class="mb-4 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{{ formset.non_form_errors }}</div>
+      {% endif %}
+
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200 text-sm">
+          <thead class="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <tr><th class="py-2">Participant</th><th class="py-2">Percent</th><th class="py-2">Remove</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            {% for f in formset %}
+              <tr>
+                <td class="py-2 align-top">
+                  {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
+                  {% if f.instance.is_company %}
+                    <span class="inline-flex rounded-full bg-brand-50 px-2 py-1 text-xs font-medium text-brand-700">Company</span>
+                  {% else %}
+                    {{ f.person }}
+                  {% endif %}
+                  {% if f.person.errors %}<p class="mt-1 text-xs text-rose-600">{{ f.person.errors|join:" " }}</p>{% endif %}
+                </td>
+                <td class="py-2 align-top">{{ f.percent }} {% if f.percent.errors %}<p class="mt-1 text-xs text-rose-600">{{ f.percent.errors|join:" " }}</p>{% endif %}</td>
+                <td class="py-2 align-top">{% if f.instance.pk and not f.instance.is_company %}{{ f.DELETE }}{% endif %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt-6 flex justify-end gap-2">
+        <a href="{% url 'periods:month_detail' code=month.code %}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</a>
+        <button type="submit" class="inline-flex items-center rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700">Save</button>
+      </div>
+    </form>
+  </div>
+{% endblock %}
