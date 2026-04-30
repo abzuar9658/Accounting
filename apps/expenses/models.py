@@ -28,7 +28,10 @@ class ExpenseCategory(models.Model):
 class Expense(models.Model):
     """Money paid out of the company's account for an operating cost."""
 
-    month = models.ForeignKey(Month, on_delete=models.PROTECT, related_name="expenses")
+    month = models.ForeignKey(
+        Month, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="expenses",
+    )
     category = models.ForeignKey(ExpenseCategory, on_delete=models.PROTECT, related_name="expenses")
     happened_on = models.DateField()
     amount = models.DecimalField(max_digits=14, decimal_places=3)

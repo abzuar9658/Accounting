@@ -4,13 +4,13 @@
 {% block content %}
   <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
     <div>
-      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ earning.month.code }} · {{ earning.received_on }}</p>
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{% if earning.month %}{{ earning.month.code }}{% else %}<span class="text-amber-600">orphaned</span>{% endif %} · {{ earning.received_on }}</p>
       <h1 class="mt-1 text-2xl font-semibold text-slate-900">{{ earning.amount|pkr }}</h1>
       <p class="mt-1 text-sm text-slate-500">Earned by <span class="font-medium text-slate-700">{{ earning.earner }}</span> · received in {% if earning.receiver_kind == 'company' %}company account{% else %}{{ earning.receiver_person }}'s account{% endif %}</p>
     </div>
     <div class="flex items-center gap-2">
       <a href="{% url 'earnings:list' %}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">All earnings</a>
-      {% if earning.month.is_editable %}<a href="{% url 'earnings:edit' pk=earning.pk %}" class="inline-flex items-center rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700">Edit</a>{% endif %}
+      {% if not earning.month or earning.month.is_editable %}<a href="{% url 'earnings:edit' pk=earning.pk %}" class="inline-flex items-center rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700">Edit</a>{% endif %}
     </div>
   </div>
 

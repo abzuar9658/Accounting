@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load roles %}
 {% block title %}Months · Accounting{% endblock %}
 {% block content %}
   <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
@@ -30,7 +31,14 @@
                   {% else %}<span class="inline-flex rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-700">Closed</span>{% endif %}
                 </td>
                 <td class="px-6 py-3 text-slate-600">{% if m.split_rule %}{{ m.split_rule.participants_label }}{% else %}<span class="text-slate-400">not configured</span>{% endif %}</td>
-                <td class="whitespace-nowrap px-6 py-3 text-right"><a class="text-sm font-medium text-brand-600 hover:text-brand-700" href="{% url 'periods:month_detail' code=m.code %}">Open →</a></td>
+                <td class="whitespace-nowrap px-6 py-3 text-right">
+                  <a class="text-sm font-medium text-brand-600 hover:text-brand-700" href="{% url 'periods:month_detail' code=m.code %}">Open →</a>
+                  {% if user.is_superuser or user|in_group:"Admin" %}
+                    <form method="post" action="{% url 'periods:month_delete' code=m.code %}" class="ml-2 inline" onsubmit="return confirm('Delete {{ m.label|escapejs }}?\nAny earnings, expenses or transfers in this month will be detached and become orphaned (not deleted).');">{% csrf_token %}
+                      <button type="submit" class="text-sm font-medium text-rose-600 hover:text-rose-700">Delete</button>
+                    </form>
+                  {% endif %}
+                </td>
               </tr>
             {% empty %}
               <tr><td colspan="4" class="px-6 py-10 text-center text-slate-500">No months yet.</td></tr>

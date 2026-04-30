@@ -6,7 +6,7 @@
     <div>
       <p class="text-sm text-slate-500"><a href="{% url 'transfers:list' %}" class="hover:text-slate-700">← All transfers</a></p>
       <h1 class="mt-1 text-2xl font-semibold text-slate-900">{{ transfer.from_label }} → {{ transfer.to_label }}</h1>
-      <p class="mt-1 text-sm text-slate-500">Month {{ transfer.month.code }} · created {{ transfer.created_at|date:"d M Y" }}</p>
+      <p class="mt-1 text-sm text-slate-500">Month {% if transfer.month %}{{ transfer.month.code }}{% else %}<span class="text-amber-600">orphaned</span>{% endif %} · created {{ transfer.created_at|date:"d M Y" }}</p>
     </div>
     {% if transfer.status != 'paid' and transfer.status != 'cancelled' %}
       <a href="{% url 'transfers:payment_create' pk=transfer.pk %}" class="inline-flex items-center rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700">Record payment</a>

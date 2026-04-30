@@ -30,13 +30,17 @@ def _build_pivot():
     """Group earnings by (project, earner) → row, with one cell per month.
 
     Months are returned in ascending chronological order so the column
-    headers read naturally left-to-right (oldest first).
+    headers read naturally left-to-right (oldest first). Earnings whose
+    month has been deleted (``month_id`` is null) are returned separately
+    as ``orphans`` so the matrix stays clean.
     """
     earnings = list(
         Earning.objects
         .select_related("month", "earner")
         .order_by("month__year", "month__month", "project", "earner__name", "id")
     )
+    orphans = [e for e in earnings if e.month_id is None]
+    earnings = [e for e in earnings if e.month_id is not None]
     months_by_id = {e.month_id: e.month for e in earnings}
     months = sorted(months_by_id.values(), key=lambda m: (m.year, m.month))
 
@@ -67,7 +71,7 @@ def _build_pivot():
             })
         r["cells"] = cells
         rows.append(r)
-    return rows, months
+    return rows, months, orphans
 
 
 @login_required
@@ -80,7 +84,7 @@ def earning_list(request):
 
     if cell_param.isdigit():
         e = Earning.objects.filter(pk=int(cell_param)).select_related("month").first()
-        if e and e.month.is_editable:
+        if e and e.month_id and e.month.is_editable:
             edit_pk = e.pk
             edit_form = EarningCellForm(instance=e, form_id="form-cell-edit")
     elif cell_param == "new":
@@ -106,13 +110,14 @@ def earning_list(request):
                 )
 
     add_form = EarningForm(form_id="form-add-row")
-    rows, months = _build_pivot()
+    rows, months, orphans = _build_pivot()
     return render(
         request,
         "earnings/list.html",
         {
             "rows": rows,
             "months": months,
+            "orphans": orphans,
             "edit_pk": edit_pk,
             "edit_form": edit_form,
             "new_cell": new_cell,
@@ -142,7 +147,7 @@ def earning_create(request):
 @login_required
 def earning_update(request, pk: int):
     earning = get_object_or_404(Earning, pk=pk)
-    if not earning.month.is_editable:
+    if earning.month_id and not earning.month.is_editable:
         messages.error(request, "That month is closed; reopen it to edit earnings.")
         return redirect("earnings:list")
     form = EarningForm(request.POST, instance=earning)
@@ -159,7 +164,7 @@ def earning_update(request, pk: int):
 @login_required
 def earning_delete(request, pk: int):
     earning = get_object_or_404(Earning.objects.select_related("month"), pk=pk)
-    if not earning.month.is_editable:
+    if earning.month_id and not earning.month.is_editable:
         messages.error(request, "That month is closed; reopen it to delete earnings.")
         return redirect("earnings:list")
     label = f"{earning.earner} · {earning.amount}"
@@ -180,7 +185,7 @@ def earning_detail(request, pk: int):
 @login_required
 def earning_edit(request, pk: int):
     earning = get_object_or_404(Earning, pk=pk)
-    if not earning.month.is_editable:
+    if earning.month_id and not earning.month.is_editable:
         messages.error(request, "That month is closed; reopen it to edit earnings.")
         return redirect("earnings:detail", pk=earning.pk)
     if request.method == "POST":

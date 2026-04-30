@@ -30,7 +30,7 @@ def expense_create(request):
 @login_required
 def expense_edit(request, pk: int):
     expense = get_object_or_404(Expense, pk=pk)
-    if not expense.month.is_editable:
+    if expense.month_id and not expense.month.is_editable:
         messages.error(request, "That month is closed; reopen it to edit expenses.")
         return redirect("expenses:list")
     if request.method == "POST":

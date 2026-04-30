@@ -88,6 +88,20 @@ _VALID_TRANSITIONS = {
 @require_POST
 @login_required
 @user_passes_test(_is_admin)
+def month_delete(request, code: str):
+    """Delete a month. Earnings, expenses and transfers attached to it are
+    detached (their ``month`` becomes null) rather than removed; the month's
+    SplitRule is cascaded out as part of the delete."""
+    month = get_object_or_404(Month, year=int(code[:4]), month=int(code[5:7]))
+    label = month.label
+    month.delete()
+    messages.success(request, f"Deleted {label}; attached entries are now orphaned.")
+    return redirect("periods:month_list")
+
+
+@require_POST
+@login_required
+@user_passes_test(_is_admin)
 def month_transition(request, code: str, target: str):
     month = get_object_or_404(Month, year=int(code[:4]), month=int(code[5:7]))
     new_status = MonthStatus(target) if target in MonthStatus.values else None

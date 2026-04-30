@@ -7,6 +7,25 @@
     <p class="mt-1 text-sm text-slate-500">Click any cell to enter or update an amount; use the row at the bottom to start a new project / face combination or to record into a month that isn't a column yet.</p>
   </div>
 
+  {% if orphans %}
+    <div class="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+      <p class="font-semibold">{{ orphans|length }} earning{{ orphans|length|pluralize }} no longer attached to a month</p>
+      <p class="mt-1 text-xs text-amber-700">Their original month was deleted. Re-assign one or delete them below.</p>
+      <ul class="mt-2 divide-y divide-amber-200">
+        {% for e in orphans %}
+          <form method="post" id="form-orphan-delete-{{ e.pk }}" action="{% url 'earnings:delete' pk=e.pk %}" onsubmit="return confirm('Delete this orphan earning?');">{% csrf_token %}</form>
+          <li class="flex items-center justify-between gap-4 py-2">
+            <span><span class="font-medium">{{ e.earner }}</span> · {{ e.project|default:"—" }} · {{ e.amount|pkr }} <span class="text-xs text-amber-600">({{ e.received_on }})</span></span>
+            <span class="text-xs">
+              <a href="{% url 'earnings:edit' pk=e.pk %}" class="font-medium text-brand-700 hover:text-brand-800">Re-assign</a>
+              <button type="submit" form="form-orphan-delete-{{ e.pk }}" class="ml-2 font-medium text-rose-700 hover:text-rose-800">Delete</button>
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
   {# Out-of-band forms referenced by inputs/buttons via the form="..." attribute #}
   <form method="post" id="form-add-row" action="{% url 'earnings:create' %}">{% csrf_token %}</form>
   {% if edit_pk %}

@@ -22,7 +22,10 @@ class Earning(models.Model):
     are usually the same person but they don't have to be.
     """
 
-    month = models.ForeignKey(Month, on_delete=models.PROTECT, related_name="earnings")
+    month = models.ForeignKey(
+        Month, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="earnings",
+    )
     earner = models.ForeignKey(Person, on_delete=models.PROTECT, related_name="earnings")
 
     receiver_kind = models.CharField(max_length=10, choices=ReceiverKind.choices, default=ReceiverKind.PERSON)
@@ -51,7 +54,8 @@ class Earning(models.Model):
         indexes = [models.Index(fields=("month", "earner"))]
 
     def __str__(self) -> str:
-        return f"{self.earner} · {self.amount} ({self.month.code})"
+        code = self.month.code if self.month_id else "no month"
+        return f"{self.earner} · {self.amount} ({code})"
 
     def clean(self):
         if self.receiver_kind == ReceiverKind.PERSON and self.receiver_person_id is None:

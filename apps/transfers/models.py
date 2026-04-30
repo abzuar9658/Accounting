@@ -35,7 +35,10 @@ class Transfer(models.Model):
     the dashboard until they are fully paid or cancelled.
     """
 
-    month = models.ForeignKey(Month, on_delete=models.PROTECT, related_name="transfers")
+    month = models.ForeignKey(
+        Month, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="transfers",
+    )
 
     from_kind = models.CharField(max_length=10, choices=PartyKind.choices)
     from_person = models.ForeignKey(Person, on_delete=models.PROTECT, null=True, blank=True, related_name="outgoing_transfers")
@@ -60,7 +63,8 @@ class Transfer(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"{self.from_label} → {self.to_label}: {self.amount} ({self.month.code})"
+        code = self.month.code if self.month_id else "no month"
+        return f"{self.from_label} → {self.to_label}: {self.amount} ({code})"
 
     def clean(self):
         if self.from_kind == PartyKind.PERSON and self.from_person_id is None:

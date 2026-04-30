@@ -28,17 +28,18 @@ def _maybe_post_company_movement(payment: Payment) -> None:
         source_id=payment.pk,
         created_by=payment.created_by,
     )
+    code = transfer.month.code if transfer.month_id else "no month"
     if transfer.to_kind == PartyKind.COMPANY:
         fields.update(
             kind=MovementKind.RECEIPT,
             amount=payment.amount,
-            description=f"Receipt from {transfer.from_label} ({transfer.month.code})"[:255],
+            description=f"Receipt from {transfer.from_label} ({code})"[:255],
         )
     elif transfer.from_kind == PartyKind.COMPANY:
         fields.update(
             kind=MovementKind.PAYOUT,
             amount=-payment.amount,
-            description=f"Payout to {transfer.to_label} ({transfer.month.code})"[:255],
+            description=f"Payout to {transfer.to_label} ({code})"[:255],
         )
     else:
         # Person-to-person payment; no company impact.
