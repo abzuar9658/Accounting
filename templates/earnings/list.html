@@ -5,7 +5,7 @@
   <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
     <div>
       <h1 class="text-2xl font-semibold text-slate-900">Earnings</h1>
-      <p class="mt-1 text-sm text-slate-500">Add a row in-line; the month is set from the date and the split is applied automatically.</p>
+      <p class="mt-1 text-sm text-slate-500">Add a row in-line; pick the month it belongs to and the split is applied automatically.</p>
     </div>
   </div>
 
@@ -20,6 +20,7 @@
         <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
           <tr>
             <th class="px-4 py-3 w-36">Date</th>
+            <th class="px-4 py-3 w-36">Month</th>
             <th class="px-4 py-3 w-40">Earner</th>
             <th class="px-4 py-3">Project</th>
             <th class="px-4 py-3 text-right w-40">Amount</th>
@@ -33,6 +34,10 @@
             <td class="px-4 py-2 align-top">
               {{ add_form.received_on }}
               {% if add_form.received_on.errors %}<p class="mt-1 text-xs text-rose-600">{{ add_form.received_on.errors|join:" " }}</p>{% endif %}
+            </td>
+            <td class="px-4 py-2 align-top">
+              {{ add_form.month }}
+              {% if add_form.month.errors %}<p class="mt-1 text-xs text-rose-600">{{ add_form.month.errors|join:" " }}</p>{% endif %}
             </td>
             <td class="px-4 py-2 align-top">
               {{ add_form.earner }}
@@ -54,7 +59,7 @@
 
           {% for month, rows in grouped %}
             <tr class="bg-slate-50/60">
-              <td colspan="6" class="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <td colspan="7" class="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <a href="{% url 'periods:month_detail' code=month.code %}" class="text-slate-700 hover:text-brand-700">{{ month.label }}</a>
                 <span class="ml-2 text-slate-400">· {{ rows|length }} entr{{ rows|length|pluralize:"y,ies" }}</span>
               </td>
@@ -62,6 +67,7 @@
             {% for e in rows %}
               <tr>
                 <td class="whitespace-nowrap px-4 py-3 text-slate-700">{{ e.received_on }}</td>
+                <td class="whitespace-nowrap px-4 py-3"><a href="{% url 'periods:month_detail' code=e.month.code %}" class="text-brand-600 hover:text-brand-700">{{ e.month.code }}</a></td>
                 <td class="whitespace-nowrap px-4 py-3 text-slate-700">{{ e.earner }}</td>
                 <td class="px-4 py-3 text-slate-600">{{ e.project|default:"—" }}</td>
                 <td class="whitespace-nowrap px-4 py-3 text-right font-medium text-slate-900">{{ e.amount|pkr }}</td>
@@ -70,7 +76,7 @@
               </tr>
             {% endfor %}
           {% empty %}
-            <tr><td colspan="6" class="px-4 py-10 text-center text-slate-500">No earnings yet — use the row above to add one.</td></tr>
+            <tr><td colspan="7" class="px-4 py-10 text-center text-slate-500">No earnings yet — use the row above to add one.</td></tr>
           {% endfor %}
         </tbody>
       </table>

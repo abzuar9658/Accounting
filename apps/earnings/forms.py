@@ -7,14 +7,14 @@ from .models import Earning, ReceiverKind
 
 
 class EarningForm(forms.ModelForm):
-    """Minimal form: month is derived from ``received_on`` server-side and the
-    receiver defaults to the earner. See ``earnings.views`` for that wiring."""
+    """Minimal form: the user picks the month explicitly; the receiver
+    defaults to the earner so the model's full clean is satisfied."""
 
     project = forms.CharField(max_length=120, required=True)
 
     class Meta:
         model = Earning
-        fields = ("earner", "amount", "project", "received_on")
+        fields = ("month", "earner", "amount", "project", "received_on")
         widgets = {
             "received_on": forms.DateInput(attrs={"type": "date"}),
         }
@@ -22,6 +22,13 @@ class EarningForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["earner"].queryset = Person.objects.filter(is_active=True)
+        self.fields["month"].queryset = Month.objects.exclude(status=MonthStatus.CLOSED)
+        self.fields["month"].empty_label = "Pick month"
+        # Default the month to the latest editable one for convenience.
+        if not self.is_bound and not self.initial.get("month") and self.instance.pk is None:
+            latest = self.fields["month"].queryset.first()
+            if latest:
+                self.initial["month"] = latest.pk
         # Compact widgets for the inline table-row form.
         cls = "block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500"
         for name, field in self.fields.items():
@@ -35,14 +42,11 @@ class EarningForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
-        received_on = cleaned.get("received_on")
-        if received_on:
-            existing = Month.objects.filter(year=received_on.year, month=received_on.month).first()
-            if existing and existing.status == MonthStatus.CLOSED:
-                raise forms.ValidationError(
-                    f"{existing.label} is closed; reopen it before adding earnings to it."
-                )
-            self.instance.month = Month.get_or_create_for(received_on.year, received_on.month)
+        month = cleaned.get("month")
+        if month and not month.is_editable:
+            raise forms.ValidationError(
+                f"{month.label} is closed; reopen it before adding earnings to it."
+            )
         # Default the receiver to the earner so the model's clean() doesn't
         # complain about the field that's been hidden from this form.
         earner = cleaned.get("earner")
