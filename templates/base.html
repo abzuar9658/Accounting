@@ -1,4 +1,4 @@
-{% load static %}
+{% load static roles %}
 <!doctype html>
 <html lang="en" class="h-full bg-slate-50">
 <head>
@@ -45,6 +45,9 @@
                 <a href="{% url 'expenses:list' %}" class="rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900">Expenses</a>
                 <a href="{% url 'transfers:list' %}" class="rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900">Transfers</a>
                 <a href="{% url 'company:detail' %}" class="rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900">Company</a>
+                {% if user.is_superuser or user|in_group:"Admin" %}
+                  <a href="{% url 'audit:log' %}" class="rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900">Audit</a>
+                {% endif %}
               </div>
             {% endif %}
           </div>

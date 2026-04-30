@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Audit log · Accounting{% endblock %}
+{% block content %}
+  <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">Audit log</h1>
+      <p class="mt-1 text-sm text-slate-500">Most recent 500 changes across the system.</p>
+    </div>
+    <div class="inline-flex rounded-md shadow-sm ring-1 ring-slate-200" role="group">
+      {% for key, label in tabs %}
+        <a href="{% if key %}?action={{ key }}{% else %}.{% endif %}"
+           class="px-3 py-1.5 text-sm font-medium {% if action == key %}bg-brand-600 text-white{% else %}bg-white text-slate-600 hover:bg-slate-50{% endif %} {% if forloop.first %}rounded-l-md{% endif %} {% if forloop.last %}rounded-r-md{% endif %}">
+          {{ label }}
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200 text-sm">
+        <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <tr>
+            <th class="px-6 py-3">When</th>
+            <th class="px-6 py-3">Actor</th>
+            <th class="px-6 py-3">Action</th>
+            <th class="px-6 py-3">Object</th>
+            <th class="px-6 py-3">Changed fields</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for e in entries %}
+            <tr>
+              <td class="whitespace-nowrap px-6 py-3 text-slate-700">{{ e.happened_at|date:"d M Y H:i" }}</td>
+              <td class="whitespace-nowrap px-6 py-3 text-slate-700">{{ e.actor|default:"system" }}</td>
+              <td class="whitespace-nowrap px-6 py-3">
+                {% if e.action == 'create' %}<span class="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">Created</span>
+                {% elif e.action == 'update' %}<span class="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">Updated</span>
+                {% else %}<span class="rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700">Deleted</span>{% endif %}
+              </td>
+              <td class="px-6 py-3 text-slate-700"><span class="font-medium">{{ e.content_type.model }}</span> · {{ e.object_repr }}</td>
+              <td class="px-6 py-3 text-slate-600">
+                {% if e.changed_fields %}
+                  <ul class="space-y-0.5 text-xs">
+                    {% for field, change in e.changed_fields.items %}
+                      <li><span class="font-medium text-slate-700">{{ field }}</span>: <span class="text-rose-600">{{ change.from|default:"—" }}</span> → <span class="text-emerald-600">{{ change.to|default:"—" }}</span></li>
+                    {% endfor %}
+                  </ul>
+                {% else %}<span class="text-slate-400">—</span>{% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="px-6 py-10 text-center text-slate-500">No entries.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

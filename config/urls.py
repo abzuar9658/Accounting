@@ -14,6 +14,7 @@ urlpatterns = [
     path("earnings/", include("apps.earnings.urls")),
     path("expenses/", include("apps.expenses.urls")),
     path("transfers/", include("apps.transfers.urls")),
+    path("audit/", include("apps.audit.urls")),
     path(
         "",
         login_required(TemplateView.as_view(template_name="home.html")),

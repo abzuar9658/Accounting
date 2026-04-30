@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "apps.earnings",
     "apps.expenses",
     "apps.transfers",
+    "apps.audit",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
@@ -44,6 +45,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "apps.audit.middleware.CurrentUserMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
