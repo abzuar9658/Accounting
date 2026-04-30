@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load money %}
+{% block title %}Earnings · Accounting{% endblock %}
+{% block content %}
+  <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">Earnings</h1>
+      <p class="mt-1 text-sm text-slate-500">All recorded inflows, with the split applied automatically.</p>
+    </div>
+    <a href="{% url 'earnings:create' %}" class="inline-flex items-center rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700">New earning</a>
+  </div>
+
+  <div class="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200 text-sm">
+        <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <tr>
+            <th class="px-6 py-3">Date</th>
+            <th class="px-6 py-3">Month</th>
+            <th class="px-6 py-3">Earner</th>
+            <th class="px-6 py-3">Receiver</th>
+            <th class="px-6 py-3 text-right">Amount</th>
+            <th class="px-6 py-3">Reference</th>
+            <th class="px-6 py-3"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for e in earnings %}
+            <tr>
+              <td class="whitespace-nowrap px-6 py-3 text-slate-700">{{ e.received_on }}</td>
+              <td class="whitespace-nowrap px-6 py-3"><a href="{% url 'periods:month_detail' code=e.month.code %}" class="text-brand-600 hover:text-brand-700">{{ e.month.code }}</a></td>
+              <td class="whitespace-nowrap px-6 py-3 text-slate-700">{{ e.earner }}</td>
+              <td class="whitespace-nowrap px-6 py-3 text-slate-600">{% if e.receiver_kind == 'company' %}Company{% else %}{{ e.receiver_person }}{% endif %}</td>
+              <td class="whitespace-nowrap px-6 py-3 text-right font-medium text-slate-900">{{ e.amount|pkr }}</td>
+              <td class="px-6 py-3 text-slate-500">{{ e.reference|default:"—" }}</td>
+              <td class="whitespace-nowrap px-6 py-3 text-right"><a href="{% url 'earnings:detail' pk=e.pk %}" class="text-sm font-medium text-brand-600 hover:text-brand-700">Open →</a></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7" class="px-6 py-10 text-center text-slate-500">No earnings yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

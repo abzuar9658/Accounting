@@ -9,6 +9,7 @@ urlpatterns = [
     path("", include("apps.accounts.urls")),
     path("company/", include("apps.company.urls")),
     path("months/", include("apps.periods.urls")),
+    path("earnings/", include("apps.earnings.urls")),
     path(
         "",
         login_required(TemplateView.as_view(template_name="home.html")),
