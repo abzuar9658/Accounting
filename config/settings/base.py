@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     "apps.expenses",
     "apps.transfers",
     "apps.audit",
+    "apps.dashboard",
 ]
 
 AUTH_USER_MODEL = "accounts.User"

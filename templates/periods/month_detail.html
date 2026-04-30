@@ -15,6 +15,7 @@
     </div>
     <div class="flex items-center gap-2">
       <a href="{% url 'periods:month_list' %}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">All months</a>
+      <a href="{% url 'dashboard:report' code=month.code %}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Report</a>
       {% if month.is_editable %}
         <a href="{% url 'periods:split_edit' code=month.code %}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Edit split</a>
         <form method="post" action="{% url 'transfers:settle_month' code=month.code %}" class="inline">

@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% load money %}
+{% block title %}Dashboard · Accounting{% endblock %}
+{% block content %}
+  <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">Dashboard</h1>
+      {% if month %}
+        <p class="mt-1 text-sm text-slate-500">
+          Latest month: <span class="font-medium text-slate-700">{{ month.label }}</span>
+          ·
+          {% if month.status == 'open' %}<span class="font-medium text-emerald-700">Open</span>
+          {% elif month.status == 'review' %}<span class="font-medium text-amber-700">Under review</span>
+          {% else %}<span class="font-medium text-slate-700">Closed</span>{% endif %}
+        </p>
+      {% else %}
+        <p class="mt-1 text-sm text-slate-500">No months recorded yet.</p>
+      {% endif %}
+    </div>
+    {% if month %}
+      <div class="flex items-center gap-2">
+        <a href="{% url 'dashboard:report' code=month.code %}" class="inline-flex items-center rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700">View report</a>
+        <a href="{% url 'periods:month_detail' code=month.code %}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Open month</a>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Company balance</p>
+      <p class="mt-2 text-2xl font-semibold text-slate-900">{{ company_balance|pkr }}</p>
+      <p class="mt-1 text-xs text-slate-500">Opening {{ company.opening_balance|pkr }} + ledger movements</p>
+    </div>
+    <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Earnings this month</p>
+      <p class="mt-2 text-2xl font-semibold text-slate-900">{{ earnings_total|default_if_none:0|pkr }}</p>
+      <p class="mt-1 text-xs text-slate-500">Total received across all earners</p>
+    </div>
+    <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Company share</p>
+      <p class="mt-2 text-2xl font-semibold text-slate-900">{{ company_share|default_if_none:0|pkr }}</p>
+      <p class="mt-1 text-xs text-slate-500">Owed to company from this month's earnings</p>
+    </div>
+    <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Net to company</p>
+      <p class="mt-2 text-2xl font-semibold {% if company_net and company_net < 0 %}text-rose-600{% else %}text-emerald-700{% endif %}">{{ company_net|default_if_none:0|pkr }}</p>
+      <p class="mt-1 text-xs text-slate-500">Share − expenses ({{ expenses_total|default_if_none:0|pkr }})</p>
+    </div>
+  </div>
+
+  <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <section class="lg:col-span-2 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+      <div class="flex items-center justify-between">
+        <h2 class="text-base font-semibold text-slate-900">Standings this month</h2>
+        <p class="text-xs text-slate-500">Positive = still holds others' money · Negative = still owed</p>
+      </div>
+      {% if person_standings %}
+        <table class="mt-4 min-w-full divide-y divide-slate-200 text-sm">
+          <thead class="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <tr>
+              <th class="py-2">Person</th>
+              <th class="py-2 text-right">Received</th>
+              <th class="py-2 text-right">Owns</th>
+              <th class="py-2 text-right">Paid out</th>
+              <th class="py-2 text-right">Paid in</th>
+              <th class="py-2 text-right">Net imbalance</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            {% for s in person_standings %}
+              <tr>
+                <td class="py-2 font-medium text-slate-800">{{ s.person.name }}</td>
+                <td class="py-2 text-right text-slate-700">{{ s.received|pkr }}</td>
+                <td class="py-2 text-right text-slate-700">{{ s.owns|pkr }}</td>
+                <td class="py-2 text-right text-slate-700">{{ s.paid_out|pkr }}</td>
+                <td class="py-2 text-right text-slate-700">{{ s.paid_in|pkr }}</td>
+                <td class="py-2 text-right font-semibold {% if s.imbalance > 0 %}text-rose-600{% elif s.imbalance < 0 %}text-amber-600{% else %}text-emerald-700{% endif %}">{{ s.imbalance|pkr }}</td>
+              </tr>
+            {% endfor %}
+            {% if company_standing %}
+              <tr class="bg-slate-50">
+                <td class="py-2 font-medium text-slate-800">Company</td>
+                <td class="py-2 text-right text-slate-700">{{ company_standing.received|pkr }}</td>
+                <td class="py-2 text-right text-slate-700">{{ company_standing.owns|pkr }}</td>
+                <td class="py-2 text-right text-slate-700">{{ company_standing.paid_out|pkr }}</td>
+                <td class="py-2 text-right text-slate-700">{{ company_standing.paid_in|pkr }}</td>
+                <td class="py-2 text-right font-semibold {% if company_standing.imbalance > 0 %}text-rose-600{% elif company_standing.imbalance < 0 %}text-amber-600{% else %}text-emerald-700{% endif %}">{{ company_standing.imbalance|pkr }}</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="mt-4 text-sm text-slate-500">No active people configured.</p>
+      {% endif %}
+    </section>
+
+    <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+      <div class="flex items-center justify-between">
+        <h2 class="text-base font-semibold text-slate-900">Pending transfers</h2>
+        <span class="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">{{ pending_count }} open · {{ pending_total|pkr }}</span>
+      </div>
+      {% if pending_transfers %}
+        <ul class="mt-4 divide-y divide-slate-100 text-sm">
+          {% for t in pending_transfers %}
+            <li class="flex items-center justify-between py-2">
+              <div>
+                <p class="font-medium text-slate-800">{{ t.from_label }} → {{ t.to_label }}</p>
+                <p class="text-xs text-slate-500">{{ t.month.label }} · {{ t.get_status_display }}</p>
+              </div>
+              <a href="{% url 'transfers:detail' pk=t.pk %}" class="text-sm font-medium text-rose-600 hover:text-rose-700">{{ t.amount_remaining|pkr }}</a>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="mt-4 text-sm text-slate-500">No pending transfers. Everything is settled.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  {% if month %}
+    <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <h2 class="text-base font-semibold text-slate-900">Recent earnings</h2>
+        {% if recent_earnings %}
+          <ul class="mt-4 divide-y divide-slate-100 text-sm">
+            {% for e in recent_earnings %}
+              <li class="flex items-center justify-between py-2">
+                <div>
+                  <p class="font-medium text-slate-800">{{ e.earner.name }}</p>
+                  <p class="text-xs text-slate-500">{{ e.received_on }} · {{ e.get_receiver_kind_display }}{% if e.receiver_person %} ({{ e.receiver_person.name }}){% endif %}</p>
+                </div>
+                <span class="text-sm font-semibold text-slate-800">{{ e.amount|pkr }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="mt-4 text-sm text-slate-500">No earnings recorded for this month.</p>
+        {% endif %}
+      </section>
+      <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <h2 class="text-base font-semibold text-slate-900">Recent expenses</h2>
+        {% if recent_expenses %}
+          <ul class="mt-4 divide-y divide-slate-100 text-sm">
+            {% for x in recent_expenses %}
+              <li class="flex items-center justify-between py-2">
+                <div>
+                  <p class="font-medium text-slate-800">{{ x.category.name }}</p>
+                  <p class="text-xs text-slate-500">{{ x.happened_on }}{% if x.description %} · {{ x.description|truncatechars:60 }}{% endif %}</p>
+                </div>
+                <span class="text-sm font-semibold text-rose-600">−{{ x.amount|pkr }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="mt-4 text-sm text-slate-500">No expenses recorded for this month.</p>
+        {% endif %}
+      </section>
+    </div>
+  {% endif %}
+{% endblock %}

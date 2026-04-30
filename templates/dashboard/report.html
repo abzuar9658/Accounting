@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% load money %}
+{% block title %}{{ month.label }} report · Accounting{% endblock %}
+{% block content %}
+  <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Monthly report</p>
+      <h1 class="mt-1 text-2xl font-semibold text-slate-900">{{ month.label }}</h1>
+      <p class="mt-1 text-sm text-slate-500">
+        Status:
+        {% if month.status == 'open' %}<span class="font-medium text-emerald-700">Open</span>
+        {% elif month.status == 'review' %}<span class="font-medium text-amber-700">Under review</span>
+        {% else %}<span class="font-medium text-slate-700">Closed</span>{% endif %}
+      </p>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="{% url 'periods:month_detail' code=month.code %}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Open month</a>
+      <a href="{% url 'dashboard' %}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Back to dashboard</a>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+      <h2 class="text-base font-semibold text-slate-900">Total earnings</h2>
+      {% if earnings_by_earner %}
+        <table class="mt-4 min-w-full divide-y divide-slate-200 text-sm">
+          <thead class="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <tr><th class="py-2">Earner</th><th class="py-2 text-right">Amount</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            {% for name, amt in earnings_by_earner.items %}
+              <tr><td class="py-2 text-slate-700">{{ name }}</td><td class="py-2 text-right font-medium text-slate-800">{{ amt|pkr }}</td></tr>
+            {% endfor %}
+            <tr class="border-t border-slate-300"><td class="py-2 font-semibold text-slate-700">Total</td><td class="py-2 text-right font-semibold text-slate-900">{{ earnings_total|pkr }}</td></tr>
+          </tbody>
+        </table>
+      {% else %}
+        <p class="mt-4 text-sm text-slate-500">No earnings recorded for this month.</p>
+      {% endif %}
+    </section>
+
+    <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+      <h2 class="text-base font-semibold text-slate-900">Split rule</h2>
+      {% if rule %}
+        <table class="mt-4 min-w-full divide-y divide-slate-200 text-sm">
+          <thead class="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <tr><th class="py-2">Participant</th><th class="py-2 text-right">Percent</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            {% for s in rule.shares.all %}
+              <tr><td class="py-2 text-slate-700">{{ s.label }}</td><td class="py-2 text-right font-medium text-slate-800">{{ s.percent }}%</td></tr>
+            {% endfor %}
+            <tr class="border-t border-slate-300"><td class="py-2 font-semibold text-slate-700">Total</td><td class="py-2 text-right font-semibold {% if rule.total_percent == 100 %}text-emerald-600{% else %}text-rose-600{% endif %}">{{ rule.total_percent }}%</td></tr>
+          </tbody>
+        </table>
+      {% else %}
+        <p class="mt-4 text-sm text-slate-500">No split rule configured.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  <section class="mt-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+    <h2 class="text-base font-semibold text-slate-900">Final allocation</h2>
+    <table class="mt-4 min-w-full divide-y divide-slate-200 text-sm">
+      <thead class="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <tr>
+          <th class="py-2">Participant</th>
+          <th class="py-2 text-right">Received</th>
+          <th class="py-2 text-right">Total share</th>
+          <th class="py-2 text-right">Paid out</th>
+          <th class="py-2 text-right">Paid in</th>
+          <th class="py-2 text-right">Net imbalance</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for s in person_standings %}
+          <tr>
+            <td class="py-2 font-medium text-slate-800">{{ s.person.name }}</td>
+            <td class="py-2 text-right text-slate-700">{{ s.received|pkr }}</td>
+            <td class="py-2 text-right text-slate-700">{{ s.owns|pkr }}</td>
+            <td class="py-2 text-right text-slate-700">{{ s.paid_out|pkr }}</td>
+            <td class="py-2 text-right text-slate-700">{{ s.paid_in|pkr }}</td>
+            <td class="py-2 text-right font-semibold {% if s.imbalance > 0 %}text-rose-600{% elif s.imbalance < 0 %}text-amber-600{% else %}text-emerald-700{% endif %}">{{ s.imbalance|pkr }}</td>
+          </tr>
+        {% endfor %}
+        <tr class="bg-slate-50">
+          <td class="py-2 font-medium text-slate-800">Company</td>
+          <td class="py-2 text-right text-slate-700">{{ company_standing.received|pkr }}</td>
+          <td class="py-2 text-right text-slate-700">{{ company_standing.owns|pkr }}</td>
+          <td class="py-2 text-right text-slate-700">{{ company_standing.paid_out|pkr }}</td>
+          <td class="py-2 text-right text-slate-700">{{ company_standing.paid_in|pkr }}</td>
+          <td class="py-2 text-right font-semibold {% if company_standing.imbalance > 0 %}text-rose-600{% elif company_standing.imbalance < 0 %}text-amber-600{% else %}text-emerald-700{% endif %}">{{ company_standing.imbalance|pkr }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+      <h2 class="text-base font-semibold text-slate-900">Company expenses</h2>
+      {% if expenses_by_category %}
+        <table class="mt-4 min-w-full divide-y divide-slate-200 text-sm">
+          <thead class="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <tr><th class="py-2">Category</th><th class="py-2 text-right">Amount</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            {% for name, amt in expenses_by_category.items %}
+              <tr><td class="py-2 text-slate-700">{{ name }}</td><td class="py-2 text-right font-medium text-slate-800">{{ amt|pkr }}</td></tr>
+            {% endfor %}
+            <tr class="border-t border-slate-300"><td class="py-2 font-semibold text-slate-700">Total</td><td class="py-2 text-right font-semibold text-slate-900">{{ expenses_total|pkr }}</td></tr>
+          </tbody>
+        </table>
+      {% else %}
+        <p class="mt-4 text-sm text-slate-500">No expenses recorded.</p>
+      {% endif %}
+      <div class="mt-4 rounded-lg bg-slate-50 p-3 text-sm">
+        <p class="text-slate-600">Company net change this month</p>
+        <p class="mt-1 text-lg font-semibold {% if company_net < 0 %}text-rose-600{% else %}text-emerald-700{% endif %}">
+          {{ company_standing.owns|pkr }} − {{ expenses_total|pkr }} = {{ company_net|pkr }}
+        </p>
+      </div>
+    </section>
+
+    <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+      <h2 class="text-base font-semibold text-slate-900">Transfers</h2>
+      {% if transfers %}
+        <table class="mt-4 min-w-full divide-y divide-slate-200 text-sm">
+          <thead class="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <tr>
+              <th class="py-2">From → To</th>
+              <th class="py-2 text-right">Amount</th>
+              <th class="py-2 text-right">Remaining</th>
+              <th class="py-2">Status</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            {% for t in transfers %}
+              <tr>
+                <td class="py-2 text-slate-700"><a href="{% url 'transfers:detail' pk=t.pk %}" class="font-medium text-brand-600 hover:text-brand-700">{{ t.from_label }} → {{ t.to_label }}</a></td>
+                <td class="py-2 text-right font-medium text-slate-800">{{ t.amount|pkr }}</td>
+                <td class="py-2 text-right text-rose-600">{{ t.amount_remaining|pkr }}</td>
+                <td class="py-2"><span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">{{ t.get_status_display }}</span></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="mt-4 text-sm text-slate-500">No transfers generated yet.</p>
+      {% endif %}
+    </section>
+  </div>
+{% endblock %}
