@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load roles %}
+{% block title %}People · Accounting{% endblock %}
+{% block content %}
+  <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">People</h1>
+      <p class="mt-1 text-sm text-slate-500">Anyone who participates in earnings, splits or transfers.</p>
+    </div>
+    {% if user.is_superuser or user|in_group:"Admin" %}
+      <a href="{% url 'person_create' %}" class="inline-flex items-center rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700">Add person</a>
+    {% endif %}
+  </div>
+
+  <div class="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200 text-sm">
+        <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <tr>
+            <th class="px-6 py-3">Name</th>
+            <th class="px-6 py-3">Login</th>
+            <th class="px-6 py-3">Bank</th>
+            <th class="px-6 py-3">Account / IBAN</th>
+            <th class="px-6 py-3">Status</th>
+            <th class="px-6 py-3"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for p in people %}
+            <tr>
+              <td class="whitespace-nowrap px-6 py-3 font-medium text-slate-900">{{ p.name }}</td>
+              <td class="whitespace-nowrap px-6 py-3 text-slate-600">{% if p.user %}{{ p.user.username }}{% else %}<span class="text-slate-400">—</span>{% endif %}</td>
+              <td class="whitespace-nowrap px-6 py-3 text-slate-600">{{ p.bank_name|default:"—" }}</td>
+              <td class="whitespace-nowrap px-6 py-3 text-slate-600">{{ p.bank_iban|default:p.bank_account_number|default:"—" }}</td>
+              <td class="whitespace-nowrap px-6 py-3">
+                {% if p.is_active %}
+                  <span class="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">Active</span>
+                {% else %}
+                  <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-200">Inactive</span>
+                {% endif %}
+              </td>
+              <td class="whitespace-nowrap px-6 py-3 text-right">
+                {% if user.is_superuser or user|in_group:"Admin" %}
+                  <a href="{% url 'person_edit' pk=p.pk %}" class="text-sm font-medium text-brand-600 hover:text-brand-700">Edit</a>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="px-6 py-10 text-center text-slate-500">No people yet. {% if user.is_superuser or user|in_group:"Admin" %}<a href="{% url 'person_create' %}" class="text-brand-600 hover:text-brand-700">Add the first one</a>.{% endif %}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

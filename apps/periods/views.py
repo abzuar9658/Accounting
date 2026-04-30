@@ -50,11 +50,13 @@ def split_edit(request, code: str):
         messages.error(request, "This month is closed; reopen it to edit the split rule.")
         return redirect("periods:month_detail", code=month.code)
 
-    rule, created = SplitRule.objects.get_or_create(month=month)
-    if created:
-        # Pre-populate one row per active person + a single company row.
-        for person in Person.objects.filter(is_active=True):
-            SplitShare.objects.create(rule=rule, person=person, percent=0)
+    rule, _ = SplitRule.objects.get_or_create(month=month)
+    # Make sure every active person and the company have a row, so that newly
+    # added people show up here without manual intervention.
+    existing_person_ids = set(rule.shares.exclude(person=None).values_list("person_id", flat=True))
+    for person in Person.objects.filter(is_active=True).exclude(id__in=existing_person_ids):
+        SplitShare.objects.create(rule=rule, person=person, percent=0)
+    if not rule.shares.filter(is_company=True).exists():
         SplitShare.objects.create(rule=rule, is_company=True, percent=0)
 
     if request.method == "POST":
