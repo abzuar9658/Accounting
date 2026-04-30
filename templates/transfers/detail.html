@@ -9,7 +9,16 @@
       <p class="mt-1 text-sm text-slate-500">Month {% if transfer.month %}{{ transfer.month.code }}{% else %}<span class="text-amber-600">orphaned</span>{% endif %} · created {{ transfer.created_at|date:"d M Y" }}</p>
     </div>
     {% if transfer.status != 'paid' and transfer.status != 'cancelled' %}
-      <a href="{% url 'transfers:payment_create' pk=transfer.pk %}" class="inline-flex items-center rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700">Record payment</a>
+      <form method="post" action="{% url 'transfers:payment_quick' pk=transfer.pk %}" class="flex items-end gap-2">
+        {% csrf_token %}
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Amount</label>
+          <input type="number" name="amount" step="0.01" min="0.01" max="{{ transfer.amount_remaining }}" value="{{ transfer.amount_remaining }}" class="mt-1 block w-40 rounded-md border-slate-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500 text-right" required>
+          <p class="mt-1 text-xs text-slate-500">Dated today · max {{ transfer.amount_remaining|pkr }}</p>
+        </div>
+        <button type="submit" class="inline-flex items-center rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700">Mark paid</button>
+        <a href="{% url 'transfers:payment_create' pk=transfer.pk %}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50" title="Record a payment with reference, proof and notes">Detailed…</a>
+      </form>
     {% endif %}
   </div>
 

@@ -1,12 +1,16 @@
+from decimal import Decimal, InvalidOperation
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from apps.periods.models import Month
 
 from .forms import PaymentForm
-from .models import Transfer, TransferStatus
+from .models import Payment, Transfer, TransferStatus
 from .services import pending_summary, settle_month
 
 
@@ -57,6 +61,46 @@ def payment_create(request, pk: int):
     else:
         form = PaymentForm(transfer=transfer)
     return render(request, "transfers/payment_form.html", {"form": form, "transfer": transfer})
+
+
+@require_POST
+@login_required
+def payment_quick(request, pk: int):
+    """Record a payment in one click from the transfer detail page.
+
+    Defaults to today's date and the full remaining amount; the user may
+    override the amount via the inline input. Reference, proof and notes
+    are intentionally omitted — the long-form ``payment_create`` view is
+    still available when those are needed.
+    """
+    transfer = get_object_or_404(Transfer, pk=pk)
+    if transfer.status in (TransferStatus.PAID, TransferStatus.CANCELLED):
+        messages.error(request, "This transfer is already settled or cancelled.")
+        return redirect("transfers:detail", pk=transfer.pk)
+
+    raw = (request.POST.get("amount") or "").strip()
+    remaining = transfer.amount_remaining
+    try:
+        amount = Decimal(raw) if raw else remaining
+    except (InvalidOperation, TypeError):
+        messages.error(request, "Enter a valid amount.")
+        return redirect("transfers:detail", pk=transfer.pk)
+
+    if amount <= 0:
+        messages.error(request, "Amount must be positive.")
+        return redirect("transfers:detail", pk=transfer.pk)
+    if amount > remaining:
+        messages.error(request, f"Cannot pay more than the remaining {remaining}.")
+        return redirect("transfers:detail", pk=transfer.pk)
+
+    Payment.objects.create(
+        transfer=transfer,
+        amount=amount,
+        happened_on=timezone.localdate(),
+        created_by=request.user,
+    )
+    messages.success(request, f"Recorded payment of {amount}.")
+    return redirect("transfers:detail", pk=transfer.pk)
 
 
 @login_required
