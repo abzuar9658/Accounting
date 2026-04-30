@@ -63,9 +63,12 @@ def split_edit(request, code: str):
         formset = SplitShareFormSet(request.POST, instance=rule)
         if formset.is_valid():
             formset.save()
-            # Recompute allocations for any earnings already in this month.
+            # Recompute allocations for any earnings already in this month
+            # and re-settle the month so transfers reflect the new split.
             from apps.earnings.services import recompute_month_allocations
+            from apps.transfers.services import settle_month_safe
             recompute_month_allocations(month)
+            settle_month_safe(month)
             messages.success(request, "Split rule saved.")
             return redirect("periods:month_detail", code=month.code)
     else:

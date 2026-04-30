@@ -150,6 +150,18 @@ def settle_month(month: Month) -> list[Transfer]:
     return created
 
 
+def settle_month_safe(month: Month | None) -> list[Transfer]:
+    """Convenience wrapper for callers that want auto-settlement on writes.
+
+    Skips the run when the month is missing (orphaned row) or no longer
+    editable so callers don't have to special-case those branches at
+    every site that records earnings, allocations or split-rule edits.
+    """
+    if month is None or not month.is_editable:
+        return []
+    return settle_month(month)
+
+
 def pending_summary() -> Iterable[Transfer]:
     """All transfers that still owe money, across every month."""
     return (

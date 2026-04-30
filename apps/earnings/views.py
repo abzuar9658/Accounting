@@ -8,6 +8,7 @@ from django.views.decorators.http import require_POST
 
 from apps.accounts.models import Person
 from apps.periods.models import Month
+from apps.transfers.services import settle_month_safe
 
 from .forms import EarningCellForm, EarningForm
 from .models import Earning
@@ -16,13 +17,24 @@ from .services import generate_allocations
 
 def _save_form(form: EarningForm, *, user) -> Earning:
     """Persist a form-built earning. Month and receiver are set on the
-    instance by ``EarningForm.clean()``; we just stamp ``created_by`` and
-    regenerate the allocations."""
+    instance by ``EarningForm.clean()``; we stamp ``created_by``,
+    regenerate the allocations and re-settle the affected month(s) so
+    the transfer ledger never lags behind the source data."""
+    previous_month = None
+    if form.instance.pk:
+        previous_month = (
+            Earning.objects.filter(pk=form.instance.pk)
+            .select_related("month").first()
+        )
+        previous_month = previous_month.month if previous_month else None
     earning = form.save(commit=False)
     if earning.created_by_id is None:
         earning.created_by = user
     earning.save()
     generate_allocations(earning)
+    settle_month_safe(earning.month)
+    if previous_month and previous_month.pk != (earning.month_id or 0):
+        settle_month_safe(previous_month)
     return earning
 
 
@@ -168,7 +180,9 @@ def earning_delete(request, pk: int):
         messages.error(request, "That month is closed; reopen it to delete earnings.")
         return redirect("earnings:list")
     label = f"{earning.earner} · {earning.amount}"
+    month = earning.month
     earning.delete()
+    settle_month_safe(month)
     messages.success(request, f"Deleted earning ({label}).")
     return redirect("earnings:list")
 
