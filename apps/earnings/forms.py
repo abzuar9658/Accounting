@@ -20,8 +20,9 @@ class EarningForm(forms.ModelForm):
             "received_on": forms.DateInput(attrs={"type": "date"}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, form_id: str | None = None, **kwargs):
         super().__init__(*args, **kwargs)
+        self._form_id = form_id
         self.fields["earner"].queryset = Person.objects.filter(is_active=True)
         self.fields["month"].queryset = Month.objects.exclude(status=MonthStatus.CLOSED)
         self.fields["month"].empty_label = "Pick month"
@@ -39,6 +40,8 @@ class EarningForm(forms.ModelForm):
         for name, field in self.fields.items():
             attrs = field.widget.attrs
             attrs["class"] = (attrs.get("class", "") + " " + cls).strip()
+            if self._form_id:
+                attrs["form"] = self._form_id
             if name == "amount":
                 attrs["placeholder"] = "0.00"
                 attrs["step"] = "0.01"
