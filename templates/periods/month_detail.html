@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load money %}
+{% load money roles %}
 {% block title %}{{ month.label }} · Accounting{% endblock %}
 {% block content %}
   <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
@@ -11,17 +11,31 @@
         {% if month.status == 'open' %}<span class="font-medium text-emerald-700">Open</span>
         {% elif month.status == 'review' %}<span class="font-medium text-amber-700">Under review</span>
         {% else %}<span class="font-medium text-slate-700">Closed</span>{% endif %}
+        {% if month.closed_at %}<span class="text-slate-400">· closed {{ month.closed_at|date:"Y-m-d H:i" }}{% if month.closed_by %} by {{ month.closed_by }}{% endif %}</span>{% endif %}
       </p>
     </div>
-    <div class="flex items-center gap-2">
+    <div class="flex flex-wrap items-center gap-2">
       <a href="{% url 'periods:month_list' %}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">All months</a>
       <a href="{% url 'dashboard:report' code=month.code %}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Report</a>
       {% if month.is_editable %}
         <a href="{% url 'periods:split_edit' code=month.code %}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Edit split</a>
-        <form method="post" action="{% url 'transfers:settle_month' code=month.code %}" class="inline">
-          {% csrf_token %}
-          <button type="submit" class="inline-flex items-center rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700">Settle month</button>
-        </form>
+        {% if user.is_superuser or user|in_group:"Admin" %}
+          <form method="post" action="{% url 'transfers:settle_month' code=month.code %}" class="inline">
+            {% csrf_token %}
+            <button type="submit" class="inline-flex items-center rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700">Settle month</button>
+          </form>
+        {% endif %}
+      {% endif %}
+      {% if user.is_superuser or user|in_group:"Admin" %}
+        {% if month.status == 'open' %}
+          <form method="post" action="{% url 'periods:month_transition' code=month.code target='review' %}" class="inline">{% csrf_token %}<button type="submit" class="inline-flex items-center rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100">Move to review</button></form>
+          <form method="post" action="{% url 'periods:month_transition' code=month.code target='closed' %}" class="inline" onsubmit="return confirm('Close this month? Earnings, expenses and split rule will be locked.');">{% csrf_token %}<button type="submit" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Close month</button></form>
+        {% elif month.status == 'review' %}
+          <form method="post" action="{% url 'periods:month_transition' code=month.code target='open' %}" class="inline">{% csrf_token %}<button type="submit" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Reopen as open</button></form>
+          <form method="post" action="{% url 'periods:month_transition' code=month.code target='closed' %}" class="inline" onsubmit="return confirm('Close this month? Earnings, expenses and split rule will be locked.');">{% csrf_token %}<button type="submit" class="inline-flex items-center rounded-md bg-slate-700 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800">Close month</button></form>
+        {% else %}
+          <form method="post" action="{% url 'periods:month_transition' code=month.code target='open' %}" class="inline" onsubmit="return confirm('Reopen this month for edits?');">{% csrf_token %}<button type="submit" class="inline-flex items-center rounded-md bg-amber-600 px-3 py-2 text-sm font-semibold text-white hover:bg-amber-700">Reopen month</button></form>
+        {% endif %}
       {% endif %}
     </div>
   </div>
