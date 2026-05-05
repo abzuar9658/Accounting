@@ -3,11 +3,13 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse
 from django.urls import include, path
 
 from apps.dashboard.views import dashboard as dashboard_view
 
 urlpatterns = [
+    path("healthz", lambda _request: HttpResponse("ok", content_type="text/plain")),
     path("admin/", admin.site.urls),
     path("", include("apps.accounts.urls")),
     path("company/", include("apps.company.urls")),

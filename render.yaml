@@ -15,7 +15,7 @@ services:
     plan: free
     region: oregon
     dockerfilePath: ./Dockerfile
-    healthCheckPath: /accounts/login/
+    healthCheckPath: /healthz
     # Free plan does not support preDeployCommand, so migrations run as part
     # of the Dockerfile CMD on container start (idempotent + safe with a
     # single instance).
