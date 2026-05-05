@@ -1,0 +1,39 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+#
+# Provisions a free Docker web service on Render. The database is hosted
+# externally on Neon (https://neon.tech) so it does not expire after 90 days
+# like Render's free Postgres does.
+#
+# When you apply this blueprint, Render will prompt you to enter the value
+# for DATABASE_URL — paste your Neon connection string (the one ending in
+# `?sslmode=require`).
+
+services:
+  - type: web
+    name: accounting
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /accounts/login/
+    # Runs once per deploy in a fresh container with all env vars present.
+    preDeployCommand: python manage.py migrate --noinput
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.prod
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DJANGO_ALLOWED_HOSTS
+        value: ".onrender.com"
+      - key: DJANGO_TIME_ZONE
+        value: Asia/Karachi
+      - key: WEB_CONCURRENCY
+        value: "2"
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      # Paste your Neon connection string here on first deploy.
+      # Format: postgres://user:pass@ep-xxxx.region.aws.neon.tech/dbname?sslmode=require
+      - key: DATABASE_URL
+        sync: false

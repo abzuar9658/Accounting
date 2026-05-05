@@ -18,4 +18,7 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Render (and most PaaS) inject $PORT. Default to 8000 for local docker runs.
+# collectstatic runs at boot so the WhiteNoise manifest exists before gunicorn
+# starts; migrations are handled by render.yaml's preDeployCommand.
+CMD ["sh", "-c", "python manage.py collectstatic --noinput && exec gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-2} --access-logfile - --error-logfile -"]

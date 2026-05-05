@@ -15,6 +15,9 @@ services:
     build: .
     restart: unless-stopped
     env_file: .env
+    # Override the production-oriented CMD in the Dockerfile so local dev keeps
+    # Django's autoreload.
+    command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/app
     ports:
