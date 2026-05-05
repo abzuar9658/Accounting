@@ -16,8 +16,9 @@ services:
     region: oregon
     dockerfilePath: ./Dockerfile
     healthCheckPath: /accounts/login/
-    # Runs once per deploy in a fresh container with all env vars present.
-    preDeployCommand: python manage.py migrate --noinput
+    # Free plan does not support preDeployCommand, so migrations run as part
+    # of the Dockerfile CMD on container start (idempotent + safe with a
+    # single instance).
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: config.settings.prod
