@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% load money %}
+{% block title %}Income · Accounting{% endblock %}
+{% block content %}
+  <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">Income by entity</h1>
+      <p class="mt-1 text-sm text-slate-500">Each entity's share of every month's earnings, from the active split rule. Independent of who actually received the cash and of any pending transfers.</p>
+    </div>
+    {% if entity_income.rows %}
+      <div class="rounded-md bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 ring-1 ring-slate-200">
+        {{ entity_income.rows|length }} month{{ entity_income.rows|length|pluralize }} · {{ entity_income.columns|length }} entit{{ entity_income.columns|length|pluralize:"y,ies" }}
+      </div>
+    {% endif %}
+  </div>
+
+  {% if entity_income.rows %}
+    <section class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200 text-sm">
+          <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <tr>
+              <th class="sticky left-0 z-10 bg-slate-50 px-6 py-3 text-left">Month</th>
+              {% for col in entity_income.columns %}
+                <th class="px-4 py-3 text-right whitespace-nowrap {% if col.is_company %}text-brand-700{% endif %}">{{ col.label }}</th>
+              {% endfor %}
+              <th class="px-6 py-3 text-right whitespace-nowrap">Total</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 bg-white">
+            {% for row in entity_income.rows %}
+              <tr class="hover:bg-slate-50/60">
+                <td class="sticky left-0 z-10 bg-white px-6 py-3 font-medium text-slate-800">
+                  <a class="hover:text-brand-700" href="{% url 'periods:month_detail' code=row.month.code %}">{{ row.month.label }}</a>
+                </td>
+                {% for v in row.cells %}
+                  <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap {% if v %}text-slate-800{% else %}text-slate-300{% endif %}">{{ v|pkr }}</td>
+                {% endfor %}
+                <td class="px-6 py-3 text-right tabular-nums whitespace-nowrap font-semibold text-slate-900">{{ row.total|pkr }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-600">
+            <tr>
+              <td class="sticky left-0 z-10 bg-slate-50 px-6 py-3 text-left">Total</td>
+              {% for v in entity_income.party_totals %}
+                <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap">{{ v|pkr }}</td>
+              {% endfor %}
+              <td class="px-6 py-3 text-right tabular-nums whitespace-nowrap text-slate-900">{{ entity_income.grand_total|pkr }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+  {% else %}
+    <section class="rounded-2xl bg-white p-10 text-center shadow-sm ring-1 ring-slate-200">
+      <p class="text-sm text-slate-500">No income to show yet. Record some earnings against a month with a split rule to populate this view.</p>
+    </section>
+  {% endif %}
+{% endblock %}
