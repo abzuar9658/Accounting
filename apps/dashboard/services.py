@@ -107,6 +107,75 @@ def company_standing(month: Month) -> CompanyStanding:
     )
 
 
+@dataclass(frozen=True)
+class EntityColumn:
+    key: str
+    label: str
+    is_company: bool
+
+
+def entity_income_by_month(*, limit: int | None = 24) -> dict:
+    """Pivot of allocations: months (newest first) × entities (Company + people).
+
+    Each cell is the entity's share of that month's earnings according to the
+    split rule snapshot stored on the allocation rows. Independent of who
+    actually received the cash, so the totals always reconcile to the gross
+    earnings of the month even before transfers are settled.
+    """
+    rows = (
+        Allocation.objects.filter(earning__month__isnull=False)
+        .values("earning__month_id", "person_id", "is_company")
+        .annotate(total=Sum("amount"))
+    )
+
+    cells: dict[tuple[int, str], Decimal] = {}
+    month_ids: set[int] = set()
+    person_ids: set[int] = set()
+    has_company = False
+    for r in rows:
+        mid = r["earning__month_id"]
+        month_ids.add(mid)
+        if r["is_company"]:
+            has_company = True
+            key = "company"
+        else:
+            person_ids.add(r["person_id"])
+            key = f"person:{r['person_id']}"
+        cells[(mid, key)] = (r["total"] or ZERO)
+
+    months = list(Month.objects.filter(id__in=month_ids).order_by("-year", "-month"))
+    if limit:
+        months = months[:limit]
+    persons = {p.id: p for p in Person.objects.filter(id__in=person_ids)}
+
+    columns: list[EntityColumn] = []
+    if has_company:
+        columns.append(EntityColumn(key="company", label="Company", is_company=True))
+    for pid in sorted(person_ids, key=lambda i: persons[i].name.lower()):
+        columns.append(EntityColumn(key=f"person:{pid}", label=persons[pid].name, is_company=False))
+
+    rows_out = []
+    party_totals = {col.key: ZERO for col in columns}
+    grand_total = ZERO
+    for m in months:
+        month_total = ZERO
+        cell_values = []
+        for col in columns:
+            v = cells.get((m.id, col.key), ZERO)
+            cell_values.append(v)
+            month_total += v
+            party_totals[col.key] += v
+        grand_total += month_total
+        rows_out.append({"month": m, "cells": cell_values, "total": month_total})
+
+    return {
+        "columns": columns,
+        "rows": rows_out,
+        "party_totals": [party_totals[c.key] for c in columns],
+        "grand_total": grand_total,
+    }
+
+
 def dashboard_context() -> dict:
     company = Company.load()
     month = _current_month()
@@ -123,6 +192,7 @@ def dashboard_context() -> dict:
         "pending_count": pending.count(),
         "pending_total": pending_total,
         "pending_transfers": pending.select_related("month", "from_person", "to_person")[:10],
+        "entity_income": entity_income_by_month(),
     }
 
     if month is None:
